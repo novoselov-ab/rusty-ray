@@ -1,0 +1,9 @@
+[package]
+name = "rusty-ray"
+version = "0.1.0"
+authors = ["Anton Novoselov <novoselov.ab@gmail.com>"]
+
+[dependencies]
+glutin = "0.9.1"
+gl = "*"
+libc = "0.2"
