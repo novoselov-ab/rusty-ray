@@ -3,11 +3,50 @@ extern crate rand;
 #[macro_use]
 extern crate glium;
 extern crate image;
+extern crate time;
 
 use std::io::Cursor;
 use glium::{glutin, Surface};
+use image::GenericImage;
+use rand::Rng;
+use time::PreciseTime;
 
 mod support;
+
+const IMAGE_SIZE: u32 = 512;
+
+struct RayTracer {
+    image: Vec<u8>, // image::DynamicImage,
+    dimensions: (u32, u32)
+}
+
+impl RayTracer {
+    fn new(dimensions: (u32, u32)) -> RayTracer {
+        RayTracer { 
+            image: vec![0;
+                      (dimensions.0 as u64
+                      * dimensions.1 as u64
+                      * (3 as u64)
+                      ) as usize],
+            dimensions: dimensions
+            //image: image::DynamicImage::new_rgba8(dimensions.0, dimensions.1) 
+        }
+    }
+
+    fn update(&mut self) {
+        let mut rng = rand::thread_rng();
+        let d = self.dimensions;
+        let s = self.image.len();
+        for i in 1..10 {
+            self.image[rng.gen_range(0, s)] = 255;
+            // self.image.put_pixel(
+            //     rng.gen_range(0, d.0),
+            //     rng.gen_range(0, d.1),
+            //     image::Rgba([255, 255, 255, 255]),
+            // );
+        }
+    }
+}
 
 fn main() {
     // Building the display, ie. the main object
@@ -17,51 +56,48 @@ fn main() {
     let display = glium::Display::new(window, context, &events_loop).unwrap();
 
     // building a texture with "OpenGL" drawn on it
-    let image = image::load(Cursor::new(&include_bytes!("opengl.png")[..]),
-                            image::PNG).unwrap().to_rgba();
-    let image_dimensions = image.dimensions();
-    let image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
-    let opengl_texture = glium::Texture2d::new(&display, image).unwrap();
-
-    // building a 1024x1024 empty texture
-    let dest_texture = glium::Texture2d::empty_with_format(&display,
-                                               glium::texture::UncompressedFloatFormat::U8U8U8U8,
-                                               glium::texture::MipmapsOption::NoMipmap,
-                                               1024, 1024).unwrap();
-    dest_texture.as_surface().clear_color(0.0, 0.0, 0.0, 1.0);
+    let mut rt = RayTracer::new((IMAGE_SIZE, IMAGE_SIZE));
 
     // the main loop
     support::start_loop(|| {
-        // we have one out of 60 chances to blit one `opengl_texture` over `dest_texture`
-        if rand::random::<f64>() <= 0.016666 {
-            let (left, bottom, dimensions): (f32, f32, f32) = rand::random();
-            let dest_rect = glium::BlitTarget {
-                left: (left * dest_texture.get_width() as f32) as u32,
-                bottom: (bottom * dest_texture.get_height().unwrap() as f32) as u32,
-                width: (dimensions * dest_texture.get_width() as f32) as i32,
-                height: (dimensions * dest_texture.get_height().unwrap() as f32) as i32,
-            };
 
-            opengl_texture.as_surface().blit_whole_color_to(&dest_texture.as_surface(), &dest_rect,
-                                                            glium::uniforms::MagnifySamplerFilter::Linear);
-        }
+        //
+        rt.update();
 
         // drawing a frame
         let target = display.draw();
-        dest_texture.as_surface().fill(&target, glium::uniforms::MagnifySamplerFilter::Linear);
+
+        let image_dimensions = rt.dimensions;
+
+        let start = PreciseTime::now();
+        
+        {
+            let image = glium::texture::RawImage2d::from_raw_rgb(
+                rt.image.clone(),
+                image_dimensions,
+            );
+            
+            let opengl_texture = glium::Texture2d::new(&display, image).unwrap();
+
+            opengl_texture
+                .as_surface()
+                .fill(&target, glium::uniforms::MagnifySamplerFilter::Linear);
+        }
         target.finish().unwrap();
+
+        println!("{} seconds", start.to(PreciseTime::now()));
 
         let mut action = support::Action::Continue;
 
         // polling and handling the events received by the window
-        events_loop.poll_events(|event| {
-            match event {
-                glutin::Event::WindowEvent { event, .. } => match event {
+        events_loop.poll_events(|event| match event {
+            glutin::Event::WindowEvent { event, .. } => {
+                match event {
                     glutin::WindowEvent::Closed => action = support::Action::Stop,
                     _ => (),
-                },
-                _ => (),
+                }
             }
+            _ => (),
         });
 
         action
