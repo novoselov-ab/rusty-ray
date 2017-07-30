@@ -1,49 +1,46 @@
 extern crate rand;
 
-#[macro_use]
+//#[macro_use]
 extern crate glium;
 extern crate image;
 extern crate time;
 
-use std::io::Cursor;
 use glium::{glutin, Surface};
 use image::GenericImage;
 use rand::Rng;
 use time::PreciseTime;
 
 mod support;
+mod math;
+
+use math::*;
 
 const IMAGE_SIZE: u32 = 512;
 
+
+
 struct RayTracer {
-    image: Vec<u8>, // image::DynamicImage,
-    dimensions: (u32, u32)
+    image: image::DynamicImage,
+    dimensions: (u32, u32),
 }
 
 impl RayTracer {
     fn new(dimensions: (u32, u32)) -> RayTracer {
-        RayTracer { 
-            image: vec![0;
-                      (dimensions.0 as u64
-                      * dimensions.1 as u64
-                      * (3 as u64)
-                      ) as usize],
-            dimensions: dimensions
-            //image: image::DynamicImage::new_rgba8(dimensions.0, dimensions.1) 
+        RayTracer {
+            image: image::DynamicImage::new_rgb8(dimensions.0, dimensions.1),
+            dimensions: dimensions,
         }
     }
 
     fn update(&mut self) {
         let mut rng = rand::thread_rng();
         let d = self.dimensions;
-        let s = self.image.len();
-        for i in 1..10 {
-            self.image[rng.gen_range(0, s)] = 255;
-            // self.image.put_pixel(
-            //     rng.gen_range(0, d.0),
-            //     rng.gen_range(0, d.1),
-            //     image::Rgba([255, 255, 255, 255]),
-            // );
+        for _ in 1..10 {
+            self.image.put_pixel(
+                rng.gen_range(0, d.0),
+                rng.gen_range(0, d.1),
+                image::Rgba([255, 255, 255, 255]),
+            );
         }
     }
 }
@@ -51,7 +48,9 @@ impl RayTracer {
 fn main() {
     // Building the display, ie. the main object
     let mut events_loop = glutin::EventsLoop::new();
-    let window = glutin::WindowBuilder::new();
+    let window = glutin::WindowBuilder::new()
+        .with_dimensions(IMAGE_SIZE, IMAGE_SIZE)
+        .with_title("Rusty Ray");
     let context = glutin::ContextBuilder::new().with_vsync(true);
     let display = glium::Display::new(window, context, &events_loop).unwrap();
 
@@ -65,27 +64,22 @@ fn main() {
         rt.update();
 
         // drawing a frame
-        let target = display.draw();
-
-        let image_dimensions = rt.dimensions;
-
         let start = PreciseTime::now();
-        
         {
-            let image = glium::texture::RawImage2d::from_raw_rgb(
-                rt.image.clone(),
-                image_dimensions,
-            );
-            
+            let target = display.draw();
+
+            let image =
+                glium::texture::RawImage2d::from_raw_rgb(rt.image.raw_pixels(), rt.dimensions);
+
             let opengl_texture = glium::Texture2d::new(&display, image).unwrap();
 
             opengl_texture
                 .as_surface()
                 .fill(&target, glium::uniforms::MagnifySamplerFilter::Linear);
-        }
-        target.finish().unwrap();
 
-        println!("{} seconds", start.to(PreciseTime::now()));
+            target.finish().unwrap();
+        }
+        //println!("{} seconds", start.to(PreciseTime::now()));
 
         let mut action = support::Action::Continue;
 

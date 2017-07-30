@@ -5,5 +5,10 @@
     "command": "cargo",
     "isShellCommand": true,
     "args": ["run"],
-    "showOutput": "always"
+    "showOutput": "always",
+    "options": {
+        "env": {
+            "RUST_BACKTRACE" : "1"
+        }
+    }
 }

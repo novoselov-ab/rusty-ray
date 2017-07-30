@@ -2,7 +2,6 @@
 
 use std::thread;
 use std::time::{Duration, Instant};
-use glium::{self, Display};
 
 pub mod camera;
 
