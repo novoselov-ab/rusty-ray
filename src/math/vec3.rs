@@ -17,13 +17,54 @@ impl Vec3 {
     fn zero() -> Vec3 {
         Vec3::new(0., 0., 0.)
     }
+
+    fn dot(self, other: Vec3) -> f32 {
+        self.x * other.x + self.y * other.y + self.z * other.z
+    }
+
+    pub fn cross(self, other: Self) -> Self {
+        Vec3 {
+            x: self.y * other.z - self.z * other.y,
+            y: self.z * other.x - self.x * other.z,
+            z: self.x * other.y - self.y * other.x,
+        }
+    }
+
+    fn scale(self, s: f32) -> Self {
+        Vec3 {
+            x: self.x * s,
+            y: self.y * s,
+            z: self.z * s,
+        }
+    }
+
+    pub fn normalize(self) -> Self {
+        let dot = self.dot(self);
+        if dot.approx_eq(f32::zero()) {
+            self
+        } else {
+            self / dot.sqrt()
+        }
+    }
+
+    pub fn square_length(&self) -> f32 {
+        self.x * self.x + self.y * self.y + self.z * self.z
+    }
+
+    pub fn length(&self) -> f32 {
+        self.square_length().sqrt()
+    }
 }
 
 impl Add for Vec3 {
     type Output = Vec3;
 
     fn add(self, other: Vec3) -> Vec3 {
-        Vec3 {x: self.x + other.x, y: self.y + other.y, z: self.z + other.z }
+        Vec3 {
+            x: self.x + other.x,
+            y: self.y + other.y,
+            z: self.z + other.z,
+        }
     }
 }
 
@@ -31,9 +72,38 @@ impl Sub for Vec3 {
     type Output = Vec3;
 
     fn sub(self, other: Vec3) -> Vec3 {
-        Vec3 {x: self.x - other.x, y: self.y - other.y, z: self.z - other.z }
+        Vec3 {
+            x: self.x - other.x,
+            y: self.y - other.y,
+            z: self.z - other.z,
+        }
     }
 }
+
+impl Mul<T> for Vec3 {
+    type Output = Vec3;
+
+    fn mul(self, s: T) -> Vec3 {
+        Vec3 {
+            x: self.x * s,
+            y: self.y * s,
+            z: self.z * s,
+        }
+    }
+}
+
+impl Neg for Vec3 {
+    type Output = Vec3;
+
+    fn neg(self) -> Vec3 {
+        Vec3 {
+            x: -self.x,
+            y: -self.y,
+            z: -self.z,
+        }
+    }
+}
+
 
 impl fmt::Display for Vec3 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -52,5 +122,8 @@ mod tests {
         assert!((v1 + v2) == Vec3::new(5., 7., 9.));
         assert!((v1 - v2) == Vec3::new(-3., -3., -3.));
         assert!(Vec3::zero() == Vec3::new(0., 0., 0.));
+        assert!(-v1 == Vec3::new(-1., -2., -3.));
+        assert!(v1.dot(v2) == 32.);
+        assert!(v1.scale(2.) == Vec3::new(2., 4., 6.));
     }
 }
