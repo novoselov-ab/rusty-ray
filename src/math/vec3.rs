@@ -40,10 +40,10 @@ impl Vec3 {
 
     pub fn normalize(self) -> Self {
         let dot = self.dot(self);
-        if dot.approx_eq(f32::zero()) {
-            self
-        } else {
+        if dot.is_normal() {
             self / dot.sqrt()
+        } else {
+            self
         }
     }
 
@@ -80,15 +80,19 @@ impl Sub for Vec3 {
     }
 }
 
-impl Mul<T> for Vec3 {
+impl Mul<f32> for Vec3 {
     type Output = Vec3;
 
-    fn mul(self, s: T) -> Vec3 {
-        Vec3 {
-            x: self.x * s,
-            y: self.y * s,
-            z: self.z * s,
-        }
+    fn mul(self, s: f32) -> Vec3 {
+        self.scale(s)
+    }
+}
+
+impl Div<f32> for Vec3 {
+    type Output = Vec3;
+
+    fn div(self, s: f32) -> Vec3 {
+        self.scale(1. / s)
     }
 }
 
@@ -125,5 +129,10 @@ mod tests {
         assert!(-v1 == Vec3::new(-1., -2., -3.));
         assert!(v1.dot(v2) == 32.);
         assert!(v1.scale(2.) == Vec3::new(2., 4., 6.));
+        assert!(v1 * 2. == v1.scale(2.));
+        assert!(v1 / 2. == v1.scale(1. / 2.));
+        assert!(v1.normalize() == v1 / v1.length());
+        assert!(v1.square_length() == (1. + 2. * 2. + 3. * 3.));
+        assert!(Vec3::new(1., 0., 0.).cross(Vec3::new(0., 1., 0.)) == Vec3::new(0., 0., 1.));
     }
 }

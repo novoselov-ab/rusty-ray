@@ -17,11 +17,26 @@ use math::*;
 
 const IMAGE_SIZE: u32 = 512;
 
+trait SceneObject {
+    
+}
 
+struct Scene {
+    objects: Vec<Box<SceneObject>>
+}
+
+impl Scene {
+    fn new() -> Scene {
+        Scene {
+            objects: Vec::new()
+        }
+    }
+}
 
 struct RayTracer {
     image: image::DynamicImage,
     dimensions: (u32, u32),
+    scene: Scene
 }
 
 impl RayTracer {
@@ -29,6 +44,7 @@ impl RayTracer {
         RayTracer {
             image: image::DynamicImage::new_rgb8(dimensions.0, dimensions.1),
             dimensions: dimensions,
+            scene: Scene::new()
         }
     }
 
