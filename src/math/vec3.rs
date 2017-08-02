@@ -14,11 +14,11 @@ impl Vec3 {
         Vec3 { x: x, y: y, z: z }
     }
 
-    fn zero() -> Vec3 {
+    pub fn zero() -> Vec3 {
         Vec3::new(0., 0., 0.)
     }
 
-    fn dot(self, other: Vec3) -> f32 {
+    pub fn dot(self, other: Vec3) -> f32 {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 
@@ -30,7 +30,7 @@ impl Vec3 {
         }
     }
 
-    fn scale(self, s: f32) -> Self {
+    pub fn scale(self, s: f32) -> Self {
         Vec3 {
             x: self.x * s,
             y: self.y * s,
