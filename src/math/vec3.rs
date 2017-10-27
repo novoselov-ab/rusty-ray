@@ -3,9 +3,9 @@ use std::fmt;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Vec3 {
-    x: f32,
-    y: f32,
-    z: f32,
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
 }
 
 impl Vec3 {
@@ -85,6 +85,18 @@ impl Mul<f32> for Vec3 {
 
     fn mul(self, s: f32) -> Vec3 {
         self.scale(s)
+    }
+}
+
+impl Mul<Vec3> for Vec3 {
+    type Output = Vec3;
+
+    fn mul(self, other: Vec3) -> Vec3 {
+        Vec3 {
+            x: self.x * other.x,
+            y: self.y * other.y,
+            z: self.z * other.z,
+        }
     }
 }
 
