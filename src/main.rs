@@ -17,8 +17,12 @@ mod math;
 
 use math::*;
 
-const IMAGE_SIZE: (u32, u32) = (1024, 512);
-const SAMPLES_PER_PIXEL: u32 = 4;
+const IMAGE_SIZE: (u32, u32) = (200, 100);
+const SAMPLES_PER_PIXEL: u32 = 100;
+
+fn gamma(v: Vec3) -> Vec3 {
+    Vec3::new(v.x.sqrt(),v.y.sqrt(),v.z.sqrt())
+}
 
 fn rgba(r: f32, g: f32, b: f32, a: f32) -> image::Rgba<u8> {
     image::Rgba([
@@ -145,15 +149,15 @@ impl Scene {
         }
     }
 
-    fn intersect(&self, ray: Ray) -> Option<IntersectionResult> {
+    fn intersect(&self, ray: Ray, min_t: f32) -> Option<IntersectionResult> {
         let mut bestResult: Option<IntersectionResult> = None;
         for object in &self.objects {
             if let Some(result) = object.intersect(&ray) {
                 let ok = match bestResult {
-                    Some(ref r) => r.t < result.t,
+                    Some(ref r) => r.t > result.t,
                     None => true
                 };
-                if ok {
+                if ok && result.t > min_t {
                     bestResult = Some(result)
                 }
             }
@@ -162,10 +166,11 @@ impl Scene {
     }
 
     fn render(&self, ray: Ray, depth: u8) -> Vec3 {
-        let intersection = self.intersect(ray);
+        let min_t = if depth > 0 { 0.001 } else { 0. };
+        let intersection = self.intersect(ray, min_t);
         if let Some(ref result) = intersection {
             let scatter = result.material.scatter(&ray, &result);
-            if depth < 10 {
+            if depth < 50 {
                 if let Some((r, attennuation)) = scatter {
                     return self.render(r, depth + 1) * attennuation
                 }
@@ -218,6 +223,7 @@ impl RayTracer {
                 }
 
                 color = color / (SAMPLES_PER_PIXEL as f32);
+                color = gamma(color);
 
                 self.image.put_pixel(
                     px,
@@ -254,14 +260,19 @@ fn main() {
 
     // scene setup
     rt.scene.objects.push(Box::new(Sphere {
-        origin: Vec3::new(0., 1., 10.),
-        radius: 2.,
+        origin: Vec3::new(0., 0., 10.),
+        radius: 1.,
         material: Material::Lambertian(Vec3::new(0.7, 0.2, 0.2))
     })); 
     rt.scene.objects.push(Box::new(Sphere {
-        origin: Vec3::new(0., -10., 10.),
-        radius: 10.,
-        material: Material::Lambertian(Vec3::new(0.3, 0.4, 0.5))
+        origin: Vec3::new(5., 0., 10.),
+        radius: 1.,
+        material: Material::Lambertian(Vec3::new(0.1, 0.1, 1.0))
+    })); 
+    rt.scene.objects.push(Box::new(Sphere {
+        origin: Vec3::new(0., -201., 10.),
+        radius: 200.,
+        material: Material::Lambertian(Vec3::new(0.8, 0.8, 0.0))
     }));
     /*
     rt.scene.objects.push(Box::new(Sphere {
