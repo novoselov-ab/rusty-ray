@@ -9,7 +9,6 @@ use glium::{glutin, Surface};
 use image::GenericImage;
 use rand::Rng;
 use time::PreciseTime;
-use std::rc::*;
 use std::cmp::*;
 
 mod support;
@@ -17,7 +16,7 @@ mod math;
 
 use math::*;
 
-const IMAGE_SIZE: (u32, u32) = (200, 100);
+const IMAGE_SIZE: (u32, u32) = (800, 400);
 const SAMPLES_PER_PIXEL: u32 = 100;
 
 fn gamma(v: Vec3) -> Vec3 {
@@ -45,16 +44,17 @@ fn lerp(a: u8, b: u8, t: f32) -> u8 {
 
 fn lerp_rgba(im0: image::Rgba<u8>, im1: image::Rgba<u8>, x: f32) -> image::Rgba<u8> {
     image::Rgba([
-        lerp(im0[0], im0[0], x),
-        lerp(im0[1], im0[1], x),
-        lerp(im0[2], im0[2], x),
-        lerp(im0[3], im0[3], x)
+        lerp(im0[0], im1[0], x),
+        lerp(im0[1], im1[1], x),
+        lerp(im0[2], im1[2], x),
+        lerp(im0[3], im1[3], x)
     ])
 }
 
 #[derive(Clone)]
 enum Material {
-    Lambertian(Vec3)
+    Lambertian(Vec3),
+    Metal(Vec3)
 }
 
 impl Material {
@@ -64,9 +64,19 @@ impl Material {
         Some((Ray::new(p, (target - p).normalize()), albedo))
     }
 
+    fn scatter_metal(&self, ray: &Ray, res: &IntersectionResult, albedo: Vec3) -> Option<(Ray, Vec3)> {
+        let reflected = ray.dir.reflect(res.n);
+        if reflected.dot(res.n) > 0. {
+            Some((Ray::new(ray.point(res.t), reflected.normalize()), albedo))
+        } else {
+            None
+        }
+    }
+
     pub fn scatter(&self, ray: &Ray, res: &IntersectionResult) -> Option<(Ray, Vec3)> {
         match *self {
-            Material::Lambertian(albedo) => self.scatter_lambertian(ray, res, albedo)
+            Material::Lambertian(albedo) => self.scatter_lambertian(ray, res, albedo),
+            Material::Metal(albedo) => self.scatter_metal(ray, res, albedo)
         }
     }
 }
@@ -150,19 +160,19 @@ impl Scene {
     }
 
     fn intersect(&self, ray: Ray, min_t: f32) -> Option<IntersectionResult> {
-        let mut bestResult: Option<IntersectionResult> = None;
+        let mut best_result: Option<IntersectionResult> = None;
         for object in &self.objects {
             if let Some(result) = object.intersect(&ray) {
-                let ok = match bestResult {
+                let ok = match best_result {
                     Some(ref r) => r.t > result.t,
                     None => true
                 };
                 if ok && result.t > min_t {
-                    bestResult = Some(result)
+                    best_result = Some(result)
                 }
             }
         }
-        bestResult
+        best_result
     }
 
     fn render(&self, ray: Ray, depth: u8) -> Vec3 {
@@ -267,12 +277,17 @@ fn main() {
     rt.scene.objects.push(Box::new(Sphere {
         origin: Vec3::new(5., 0., 10.),
         radius: 1.,
-        material: Material::Lambertian(Vec3::new(0.1, 0.1, 1.0))
+        material: Material::Metal(Vec3::new(0.1, 0.1, 1.0))
+    })); 
+    rt.scene.objects.push(Box::new(Sphere {
+        origin: Vec3::new(-5., 0., 10.),
+        radius: 1.,
+        material: Material::Metal(Vec3::new(0.8, 0.8, 0.7))
     })); 
     rt.scene.objects.push(Box::new(Sphere {
         origin: Vec3::new(0., -201., 10.),
         radius: 200.,
-        material: Material::Lambertian(Vec3::new(0.8, 0.8, 0.0))
+        material: Material::Lambertian(Vec3::new(0.3, 0.2, 0.0))
     }));
     /*
     rt.scene.objects.push(Box::new(Sphere {
@@ -281,10 +296,14 @@ fn main() {
         material: Material::Lambertian(0.2)
     }));*/
 
+    let mut frames = 0;
+
     // the main loop
     support::start_loop(|| {
         //
-        rt.update();
+        if frames == 0 {
+            rt.update();
+        }
 
         // drawing a frame
         let start = PreciseTime::now();
@@ -314,6 +333,8 @@ fn main() {
             },
             _ => (),
         });
+
+        frames += 1;
 
         action
     });

@@ -47,6 +47,10 @@ impl Vec3 {
         }
     }
 
+    pub fn reflect(self, n: Vec3) -> Self {
+        self - n.scale(2. * self.dot(n))
+    }
+
     pub fn square_length(&self) -> f32 {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
