@@ -1,4 +1,3 @@
-use std::fmt;
 use vec3::*;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
