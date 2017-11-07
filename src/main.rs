@@ -16,7 +16,7 @@ use math::*;
 use core::*;
 
 
-const IMAGE_SIZE: (u32, u32) = (400, 200);
+const IMAGE_SIZE: (u32, u32) = (1024, 768);
 
 
 fn main() {

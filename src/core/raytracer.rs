@@ -9,7 +9,7 @@ use util::*;
 use scene::*;
 
 const SAMPLES_PER_PIXEL: u32 = 1;
-const MAX_DEPTH: u8 = 20;
+const MAX_DEPTH: u8 = 40;
 
 #[derive(Clone)]
 pub enum Material {
